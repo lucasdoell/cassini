@@ -5,3 +5,6 @@ dist/
 .DS_Store
 coverage/
 .pnpm-debug.log
+.next/
+out/
+next-env.d.ts
