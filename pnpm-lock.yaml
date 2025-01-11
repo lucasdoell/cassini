@@ -8,6 +8,31 @@ importers:
 
   .: {}
 
+  examples/todo-app:
+    dependencies:
+      '@cassini/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
+      next:
+        specifier: ^15.1.4
+        version: 15.1.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.0.0(react@19.0.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.10.5
+      '@types/react':
+        specifier: ^19.0.4
+        version: 19.0.4
+      typescript:
+        specifier: ^5.0.0
+        version: 5.7.3
+
   packages/analytics:
     dependencies:
       cookies-next:
