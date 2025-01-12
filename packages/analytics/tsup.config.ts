@@ -10,7 +10,7 @@ export default defineConfig([
     format: ["esm", "cjs"],
     dts: true,
     sourcemap: true,
-    clean: true,
+    clean: false,
     external: ["react", "next", "react-dom"],
     esbuildOptions(options) {
       options.banner = {
