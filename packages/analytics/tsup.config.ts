@@ -21,7 +21,7 @@ export default defineConfig([
   // Server bundle
   {
     entry: {
-      "next/server": "src/next/server.ts",
+      "next/server/index": "src/next/server.ts",
     },
     format: ["esm", "cjs"],
     dts: true,
