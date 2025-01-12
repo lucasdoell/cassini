@@ -5,6 +5,14 @@ import { type AnalyticsConfig } from "../types";
 
 let serverInstance: ServerAnalytics | null = null;
 
+/**
+ * Returns the server-side analytics configuration.
+ * This function is used to initialize the server-side analytics system.
+ * It checks for the following environment variables:
+ * - CASSINI_ENDPOINT: The endpoint URL for the analytics system.
+ * - NEXT_PUBLIC_CASSINI_ENDPOINT: The endpoint URL for the analytics system.
+ * If none of these variables are set, an error is thrown.
+ */
 function getServerConfig(): AnalyticsConfig {
   if (
     !process.env.CASSINI_ENDPOINT &&
@@ -28,6 +36,11 @@ function getServerConfig(): AnalyticsConfig {
   };
 }
 
+/**
+ * Creates a new server-side analytics instance.
+ * It takes an optional configuration object as a parameter.
+ * If no configuration is provided, the default configuration is used.
+ */
 export function createServerAnalytics(
   config = DEFAULT_CONFIG
 ): ServerAnalytics {
@@ -40,6 +53,13 @@ export function createServerAnalytics(
   return serverInstance;
 }
 
+/**
+ * Tracks an analytics event on the server-side.
+ * This function sends an analytics event to the analytics system.
+ * It takes the following parameters:
+ * - name: The name of the event.
+ * - properties: An optional object of properties to be added to the event.
+ */
 export async function track(
   name: string,
   properties: Record<string, unknown> = {}
