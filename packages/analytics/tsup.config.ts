@@ -1,21 +1,32 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig([
-  // Base configuration
+  // Client bundle
   {
-    entry: ["src/index.ts"],
+    entry: {
+      index: "src/index.ts",
+      "next/index": "src/next/index.ts",
+    },
     format: ["esm", "cjs"],
     dts: true,
+    sourcemap: true,
     clean: true,
-    outDir: "dist",
+    external: ["react", "next", "react-dom"],
+    esbuildOptions(options) {
+      options.banner = {
+        js: '"use client";',
+      };
+    },
   },
-  // Next.js specific configuration
+  // Server bundle
   {
-    entry: ["src/next/index.ts"],
+    entry: {
+      "next/server": "src/next/server.ts",
+    },
     format: ["esm", "cjs"],
     dts: true,
+    sourcemap: true,
     clean: false,
-    outDir: "dist/next",
-    external: ["next", "react", "react-dom"],
+    external: ["react", "next", "react-dom"],
   },
 ]);
