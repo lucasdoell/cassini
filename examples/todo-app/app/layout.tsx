@@ -8,12 +8,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Analytics
-          endpoint="http://localhost:3001/analytics"
-          apiKey="debug-key"
-        >
-          {children}
-        </Analytics>
+        <Analytics>{children}</Analytics>
       </body>
     </html>
   );
