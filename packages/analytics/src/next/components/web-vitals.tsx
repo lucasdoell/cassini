@@ -1,10 +1,10 @@
 "use client";
 
+import { useAnalytics } from "@/next/analytics";
 import type { NextWebVitalsMetric } from "next/app";
 import { useReportWebVitals } from "next/web-vitals";
 import { useCallback } from "react";
 import { MetricType } from "../../types";
-import { useAnalytics } from "../provider";
 
 // Type for mapping metric names to their respective values
 type MetricMapping = {
