@@ -1,6 +1,6 @@
 "use server";
 
-import { track } from "@cassini/analytics/dist/next/server.js";
+import { track } from "@cassini/analytics/next/server";
 import { revalidatePath } from "next/cache";
 import { Todo } from "./types";
 
