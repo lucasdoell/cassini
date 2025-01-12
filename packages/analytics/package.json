@@ -17,9 +17,9 @@
       "require": "./dist/next/index.js"
     },
     "./next/server": {
-      "types": "./dist/next/server.d.ts",
-      "import": "./dist/next/server.mjs",
-      "require": "./dist/next/server.js"
+      "types": "./dist/next/server/index.d.ts",
+      "import": "./dist/next/server/index.mjs",
+      "require": "./dist/next/server/index.js"
     },
     "./dist/*": "./dist/*"
   },
