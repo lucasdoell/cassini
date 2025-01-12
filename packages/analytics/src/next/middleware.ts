@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { parseUserAgent } from "../utils/device-detection";
 import { generateVisitorHash } from "../utils/fingerprint";
 
+/**
+ * Middleware function for the Next.js server-side analytics system.
+ * This function is responsible for handling analytics events on the server-side.
+ */
 export function analyticsMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
