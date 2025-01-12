@@ -34,14 +34,13 @@ export class ClientAnalytics {
         const success = navigator.sendBeacon(url, blob);
         if (success) return true;
       } catch (error) {
-        // Fallback to fetch if sendBeacon fails
         if (this.config.debug) {
           console.warn("SendBeacon failed, falling back to fetch:", error);
         }
       }
     }
 
-    // Fallback to fetch with keepalive
+    // Fallback to fetch without credentials
     try {
       const response = await fetch(url, {
         method: "POST",
@@ -51,6 +50,8 @@ export class ClientAnalytics {
           Authorization: `Bearer ${this.config.apiKey}`,
         },
         keepalive: true,
+        // Don't include credentials to avoid CORS preflight requests
+        credentials: "omit",
       });
 
       return response.ok;
