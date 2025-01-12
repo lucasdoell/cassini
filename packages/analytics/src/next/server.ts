@@ -7,7 +7,7 @@ let serverInstance: ServerAnalytics | null = null;
 
 function getServerConfig(): AnalyticsConfig {
   if (
-    !process.env.CASSINI_ENDPOINT ||
+    !process.env.CASSINI_ENDPOINT &&
     !process.env.NEXT_PUBLIC_CASSINI_ENDPOINT
   ) {
     throw new Error(
@@ -15,7 +15,7 @@ function getServerConfig(): AnalyticsConfig {
     );
   }
 
-  if (!process.env.CASSINI_KEY || !process.env.NEXT_PUBLIC_CASSINI_KEY) {
+  if (!process.env.CASSINI_KEY && !process.env.NEXT_PUBLIC_CASSINI_KEY) {
     throw new Error(
       "Error initializing Cassini Analytics: No API key provided."
     );
@@ -64,3 +64,5 @@ export async function track(
     },
   });
 }
+
+export * from "./middleware";
