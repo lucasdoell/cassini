@@ -1,66 +1,43 @@
 "use client";
 
+import { useAnalytics } from "@/next/analytics";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { parseUserAgent } from "../../utils/device-detection";
-import { generateSessionId, getOrCreateVisitorId } from "../../utils/session";
-import { useAnalytics } from "../provider";
+import { useEffect } from "react";
 
 export function AutoAnalytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const analytics = useAnalytics();
-  const [screenSize, setScreenSize] = useState<string>("");
 
   useEffect(() => {
-    // Update screen size on resize
-    const updateScreenSize = () => {
-      setScreenSize(`${window.innerWidth}x${window.innerHeight}`);
+    // Only track client-side navigations (initial page load is handled by middleware)
+    if (!document.referrer.includes(window.location.host)) {
+      return; // Skip if this is the initial page load
+    }
+
+    const eventData = {
+      url: pathname,
+      referrer: document.referrer,
+      hostname: window.location.hostname,
+      screen: `${window.innerWidth}x${window.innerHeight}`,
+      timestamp: Date.now(),
+      type: "pageview",
     };
 
-    updateScreenSize();
-    window.addEventListener("resize", updateScreenSize);
-
-    return () => window.removeEventListener("resize", updateScreenSize);
-  }, []);
-
-  useEffect(() => {
-    const visitorId = getOrCreateVisitorId();
-    const userAgent = navigator.userAgent;
-    const deviceInfo = parseUserAgent(userAgent);
-
-    // Track client-side navigation
-    analytics.track({
-      name: "page_view",
-      properties: {
-        url: window.location.href,
-        referrer: document.referrer,
-        device: {
-          ...deviceInfo,
-          screenSize,
-        },
-        visitor: {
-          id: visitorId,
-          returning: document.cookie.includes("cassini_vid="),
-        },
-        session: {
-          id:
-            sessionStorage.getItem("cassini_sid") ||
-            (() => {
-              const sid = generateSessionId();
-              sessionStorage.setItem("cassini_sid", sid);
-              return sid;
-            })(),
-          firstVisit: !document.cookie.includes("cassini_vid="),
-        },
-        utm: Object.fromEntries(
-          ["source", "medium", "campaign", "term", "content"]
-            .map((param) => [param, searchParams.get(`utm_${param}`)])
-            .filter(([_, value]) => value !== null)
-        ),
-      },
-    });
-  }, [pathname, searchParams, analytics, screenSize]);
+    // Use sendBeacon for reliable delivery
+    if (navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(eventData)], {
+        type: "application/json",
+      });
+      navigator.sendBeacon(analytics.getEndpoint(), blob);
+    } else {
+      fetch(analytics.getEndpoint(), {
+        method: "POST",
+        body: JSON.stringify(eventData),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  }, [pathname, searchParams, analytics]);
 
   return null;
 }
