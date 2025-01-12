@@ -1,27 +1,72 @@
 "use client";
 
-import { type PropsWithChildren } from "react";
-import type { AnalyticsConfig } from "../types";
-import { AutoAnalytics } from "./components/auto-analytics";
-import { WebVitals } from "./components/web-vitals";
-import { Analytics as BaseAnalytics } from "./provider";
+import { ClientAnalytics } from "@/next/client";
+import { AutoAnalytics } from "@/next/components/auto-analytics";
+import { WebVitals } from "@/next/components/web-vitals";
+import { AnalyticsConfig } from "@/types";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type PropsWithChildren,
+} from "react";
 
-export interface CassiniAnalyticsProps extends Partial<AnalyticsConfig> {
+interface AnalyticsContextValue {
+  client: ClientAnalytics;
+  config: Required<AnalyticsConfig>;
+}
+
+const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
+
+export function useAnalytics() {
+  const context = useContext(AnalyticsContext);
+  if (!context) {
+    throw new Error(
+      "useAnalytics must be used within an Analytics provider. " +
+        "Have you added the <Analytics /> component to your app?"
+    );
+  }
+  return context.client;
+}
+
+export interface AnalyticsProps extends Partial<AnalyticsConfig> {
   webVitals?: boolean;
-  autoPageViews?: boolean;
 }
 
 export function Analytics({
   children,
   webVitals = true,
-  autoPageViews = true,
   ...config
-}: PropsWithChildren<CassiniAnalyticsProps>) {
+}: PropsWithChildren<AnalyticsProps>) {
+  const analyticsRef = useRef<AnalyticsContextValue | null>(null);
+
+  if (!analyticsRef.current) {
+    const finalConfig = {
+      endpoint: "http://localhost:3001/analytics",
+      ...config,
+    } as Required<AnalyticsConfig>;
+
+    analyticsRef.current = {
+      client: new ClientAnalytics(finalConfig),
+      config: finalConfig,
+    };
+  }
+
+  useEffect(() => {
+    const analytics = analyticsRef.current;
+    if (!analytics) return;
+
+    return () => {
+      analytics.client.destroy();
+    };
+  }, []);
+
   return (
-    <BaseAnalytics {...config}>
-      {autoPageViews && <AutoAnalytics />}
-      {webVitals && <WebVitals />}
+    <AnalyticsContext.Provider value={analyticsRef.current}>
       {children}
-    </BaseAnalytics>
+      {webVitals && <WebVitals />}
+      <AutoAnalytics />
+    </AnalyticsContext.Provider>
   );
 }
