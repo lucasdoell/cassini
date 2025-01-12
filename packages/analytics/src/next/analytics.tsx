@@ -19,6 +19,11 @@ interface AnalyticsContextValue {
 
 const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 
+/**
+ * Hook to access the client-side analytics instance.
+ * This hook should be used within the `Analytics` component.
+ * It returns the client-side analytics instance, which can be used to track events.
+ */
 export function useAnalytics() {
   const context = useContext(AnalyticsContext);
   if (!context) {
