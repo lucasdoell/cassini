@@ -1,3 +1,5 @@
+import { Analytics } from "@cassini/analytics/next";
+
 export default function RootLayout({
   children,
 }: {
@@ -5,7 +7,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Analytics
+          endpoint="http://localhost:3001/analytics"
+          apiKey="debug-key"
+        >
+          {children}
+        </Analytics>
+      </body>
     </html>
   );
 }
