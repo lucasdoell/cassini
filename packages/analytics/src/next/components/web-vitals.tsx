@@ -31,7 +31,7 @@ const METRIC_MAPPINGS: MetricMapping = {
 
 export function WebVitals() {
   const analytics = useAnalytics();
-  const url = analytics.getEndpoint();
+  const url = analytics.endpoint;
 
   const reportWebVital = useCallback(
     (metric: NextWebVitalsMetric) => {

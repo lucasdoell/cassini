@@ -1,6 +1,10 @@
 import { DEFAULT_CONFIG } from "../config";
 import type { AnalyticsConfig, AnalyticsEvent } from "./../types";
 
+/**
+ * The client-side analytics class for sending events to the analytics system.
+ * This class is responsible for sending events to the analytics system and managing the queue of events.
+ */
 export class ClientAnalytics {
   private readonly config: Required<AnalyticsConfig>;
   private queue: AnalyticsEvent[] = [];
@@ -63,6 +67,11 @@ export class ClientAnalytics {
     }
   }
 
+  /**
+   * Tracks an analytics event on the client-side.
+   * The event is added to the queue and flushed to the server if the queue is full.
+   * The event should not include the `timestamp` property, as it will be automatically set to the current timestamp.
+   */
   async track(event: Omit<AnalyticsEvent, "timestamp">): Promise<void> {
     const fullEvent: AnalyticsEvent = {
       ...event,
@@ -117,7 +126,10 @@ export class ClientAnalytics {
     }
   }
 
-  getEndpoint(): string {
+  /**
+   * Returns the endpoint URL for the analytics system.
+   */
+  get endpoint(): string {
     return this.config.endpoint;
   }
 }

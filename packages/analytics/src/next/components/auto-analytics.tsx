@@ -29,9 +29,9 @@ export function AutoAnalytics() {
       const blob = new Blob([JSON.stringify(eventData)], {
         type: "application/json",
       });
-      navigator.sendBeacon(analytics.getEndpoint(), blob);
+      navigator.sendBeacon(analytics.endpoint, blob);
     } else {
-      fetch(analytics.getEndpoint(), {
+      fetch(analytics.endpoint, {
         method: "POST",
         body: JSON.stringify(eventData),
         keepalive: true,
