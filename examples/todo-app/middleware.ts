@@ -1,4 +1,4 @@
-import { analyticsMiddleware } from "@cassini/analytics/dist/next/server.js";
+import { analyticsMiddleware } from "@cassini/analytics/next/server";
 import { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
