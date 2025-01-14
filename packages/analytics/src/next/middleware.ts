@@ -51,7 +51,7 @@ export function analyticsMiddleware(request: NextRequest) {
   const eventData = {
     url: pathname,
     hostname: host,
-    referrer: referrer,
+    referrer,
     visitorId, // Anonymous, temporary ID
     device: deviceInfo,
     geo: {
