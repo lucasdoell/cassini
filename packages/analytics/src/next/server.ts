@@ -70,7 +70,7 @@ export async function track(
   // Gather common server-side context
   const commonProperties = {
     userAgent: (await headersList).get("user-agent"),
-    referer: (await headersList).get("referer"),
+    referrer: (await headersList).get("referer"),
     host: (await headersList).get("host"),
     path: (await headersList).get("x-invoke-path"),
     isServer: true,
