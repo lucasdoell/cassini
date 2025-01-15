@@ -6,7 +6,6 @@ import { useReportWebVitals } from "next/web-vitals";
 import { useCallback } from "react";
 import { MetricType } from "../../types";
 
-// Type for mapping metric names to their respective values
 type MetricMapping = {
   [K in MetricType]: {
     name: string;
