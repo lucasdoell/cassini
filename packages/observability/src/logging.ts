@@ -17,12 +17,10 @@ type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
 type SyncLogOutput = (log: StructuredLog) => void;
 type AsyncLogOutput = (log: StructuredLog) => Promise<void>;
-type LogOutput = SyncLogOutput | AsyncLogOutput;
 
-/**
- * Configuration options for the structured logger.
- */
-export interface LoggerConfig {
+export interface LoggerConfig<
+  T extends SyncLogOutput | AsyncLogOutput = AsyncLogOutput
+> {
   /** Name of the service or component using the logger */
   serviceName: string;
   /** Minimum log level to record. Defaults to DEBUG */
@@ -30,7 +28,7 @@ export interface LoggerConfig {
   /** Additional context to include with every log */
   defaultMetadata?: Record<string, unknown>;
   /** Function to handle the structured log output. Can be sync or async */
-  outputFn?: LogOutput;
+  outputFn?: T;
   /** Optional custom URL for the OpenTelemetry collector */
   exporterUrl?: string;
 }
@@ -51,6 +49,23 @@ export interface StructuredLog {
   };
   traceId?: string;
   spanId?: string;
+}
+
+interface SyncLogger {
+  debug(message: string, metadata?: Record<string, unknown>): void;
+  info(message: string, metadata?: Record<string, unknown>): void;
+  warn(message: string, metadata?: Record<string, unknown>): void;
+  error(message: string | Error, metadata?: Record<string, unknown>): void;
+}
+
+interface AsyncLogger {
+  debug(message: string, metadata?: Record<string, unknown>): Promise<void>;
+  info(message: string, metadata?: Record<string, unknown>): Promise<void>;
+  warn(message: string, metadata?: Record<string, unknown>): Promise<void>;
+  error(
+    message: string | Error,
+    metadata?: Record<string, unknown>
+  ): Promise<void>;
 }
 
 /**
@@ -102,33 +117,13 @@ function createDefaultOutputFn(
   };
 }
 
-/**
- * Helper function to handle both sync and async output functions
- */
-async function safeExecuteOutput(
-  outputFn: LogOutput,
-  log: StructuredLog
-): Promise<void> {
-  try {
-    await Promise.resolve(outputFn(log));
-  } catch (error) {
-    console.error(`Failed to send ${log.level.toLowerCase()} log:`, error);
-  }
-}
+export function createStructuredLogger<
+  T extends SyncLogOutput | AsyncLogOutput
+>(config: LoggerConfig<T>): T extends SyncLogOutput ? SyncLogger : AsyncLogger;
 
 /**
- * Creates a structured logger with OpenTelemetry integration.
- *
- * @example
- * ```typescript
- * const logger = createStructuredLogger({
- *   serviceName: 'user-service',
- *   defaultMetadata: { environment: 'production' }
- * });
- *
- * await logger.info('User logged in', { userId: '123' });
- * await logger.error(new Error('Authentication failed'), { userId: '123' });
- * ```
+ * Creates a structured logger that can be either synchronous or asynchronous
+ * based on the type of output function provided.
  */
 export function createStructuredLogger({
   serviceName,
@@ -136,7 +131,7 @@ export function createStructuredLogger({
   defaultMetadata = {},
   exporterUrl,
   outputFn,
-}: LoggerConfig) {
+}: LoggerConfig): SyncLogger | AsyncLogger {
   const logLevels: Record<LogLevel, number> = {
     [LOG_LEVEL.DEBUG]: 0,
     [LOG_LEVEL.INFO]: 1,
@@ -144,7 +139,9 @@ export function createStructuredLogger({
     [LOG_LEVEL.ERROR]: 3,
   };
 
+  // Use provided outputFn or create default one
   const sendLog = outputFn || createDefaultOutputFn(serviceName, exporterUrl);
+  const isAsync = sendLog.constructor.name === "AsyncFunction" || !outputFn;
 
   function createLogEntry(
     level: LogLevel,
@@ -187,43 +184,107 @@ export function createStructuredLogger({
     return logLevels[level] >= logLevels[minLevel];
   }
 
-  return {
+  const syncMethods: SyncLogger = {
+    debug(message: string, metadata?: Record<string, unknown>) {
+      if (shouldLog(LOG_LEVEL.DEBUG)) {
+        try {
+          (sendLog as SyncLogOutput)(
+            createLogEntry(LOG_LEVEL.DEBUG, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send debug log:", error);
+        }
+      }
+    },
+
+    info(message: string, metadata?: Record<string, unknown>) {
+      if (shouldLog(LOG_LEVEL.INFO)) {
+        try {
+          (sendLog as SyncLogOutput)(
+            createLogEntry(LOG_LEVEL.INFO, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send info log:", error);
+        }
+      }
+    },
+
+    warn(message: string, metadata?: Record<string, unknown>) {
+      if (shouldLog(LOG_LEVEL.WARN)) {
+        try {
+          (sendLog as SyncLogOutput)(
+            createLogEntry(LOG_LEVEL.WARN, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send warn log:", error);
+        }
+      }
+    },
+
+    error(message: string | Error, metadata?: Record<string, unknown>) {
+      if (shouldLog(LOG_LEVEL.ERROR)) {
+        try {
+          (sendLog as SyncLogOutput)(
+            createLogEntry(LOG_LEVEL.ERROR, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send error log:", error);
+        }
+      }
+    },
+  };
+
+  const asyncMethods: AsyncLogger = {
     async debug(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.DEBUG)) {
-        await safeExecuteOutput(
-          sendLog,
-          createLogEntry(LOG_LEVEL.DEBUG, message, metadata)
-        );
+        try {
+          await (sendLog as AsyncLogOutput)(
+            createLogEntry(LOG_LEVEL.DEBUG, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send debug log:", error);
+        }
       }
     },
 
     async info(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.INFO)) {
-        await safeExecuteOutput(
-          sendLog,
-          createLogEntry(LOG_LEVEL.INFO, message, metadata)
-        );
+        try {
+          await (sendLog as AsyncLogOutput)(
+            createLogEntry(LOG_LEVEL.INFO, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send info log:", error);
+        }
       }
     },
 
     async warn(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.WARN)) {
-        await safeExecuteOutput(
-          sendLog,
-          createLogEntry(LOG_LEVEL.WARN, message, metadata)
-        );
+        try {
+          await (sendLog as AsyncLogOutput)(
+            createLogEntry(LOG_LEVEL.WARN, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send warn log:", error);
+        }
       }
     },
 
     async error(message: string | Error, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.ERROR)) {
-        await safeExecuteOutput(
-          sendLog,
-          createLogEntry(LOG_LEVEL.ERROR, message, metadata)
-        );
+        try {
+          await (sendLog as AsyncLogOutput)(
+            createLogEntry(LOG_LEVEL.ERROR, message, metadata)
+          );
+        } catch (error) {
+          console.error("Failed to send error log:", error);
+        }
       }
     },
   };
+
+  return isAsync ? asyncMethods : syncMethods;
 }
 
 export { LOG_LEVEL };
