@@ -103,3 +103,70 @@ describe("createStructuredLogger", () => {
     await expect(logger.info("Test message")).resolves.not.toThrow();
   });
 });
+
+describe("createStructuredLogger with sync/async outputs", () => {
+  test("sync output function creates synchronous logger", () => {
+    const logs: any[] = [];
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+      outputFn: (log) => {
+        logs.push(log);
+      },
+    });
+
+    // Should be able to use without await
+    logger.info("Test message");
+    expect(logs).toHaveLength(1);
+    expect(logs[0].message).toBe("Test message");
+  });
+
+  test("async output function creates asynchronous logger", async () => {
+    const logs: any[] = [];
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+      outputFn: async (log) => {
+        await Promise.resolve();
+        logs.push(log);
+      },
+    });
+
+    // Need to await async logger
+    await logger.info("Test message");
+    expect(logs).toHaveLength(1);
+    expect(logs[0].message).toBe("Test message");
+  });
+
+  test("default output function creates asynchronous logger", async () => {
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+    });
+
+    // Default logger should be async
+    // TypeScript should enforce awaiting this
+    await logger.info("Test message");
+  });
+
+  test("handles errors in sync output function", () => {
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+      outputFn: () => {
+        throw new Error("Sync error");
+      },
+    });
+
+    // Should not throw
+    expect(() => logger.info("Test message")).not.toThrow();
+  });
+
+  test("handles errors in async output function", async () => {
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+      outputFn: async () => {
+        throw new Error("Async error");
+      },
+    });
+
+    // Should not throw
+    await expect(logger.info("Test message")).resolves.not.toThrow();
+  });
+});
