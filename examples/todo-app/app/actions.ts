@@ -1,42 +1,82 @@
 "use server";
 
 import { track } from "@cassini/analytics/next/server";
+import { Span, withSpan } from "@cassini/observability/next";
 import { revalidatePath } from "next/cache";
 import { Todo } from "./types";
 
 let todos: Todo[] = [];
 
-export async function addTodo(text: string) {
-  const todo = {
-    id: Math.random().toString(36).substring(7),
-    text,
-    completed: false,
-  };
-
-  todos.push(todo);
-  revalidatePath("/");
-
-  await track("todo_added", {
-    todoId: todo.id,
-    todoText: text,
+export async function withTodoSpan<T>({
+  operationName,
+  attributes,
+  operation,
+}: {
+  operationName: string;
+  attributes?: Record<string, string | number | boolean>;
+  operation: (span: Span) => Promise<T>;
+}): Promise<T> {
+  return withSpan({
+    serviceName: "todo-app",
+    activeSpanName: operationName,
+    attributes,
+    operation,
   });
+}
 
-  return todo;
+export async function addTodo(text: string) {
+  withTodoSpan({
+    operationName: "add_todo",
+    attributes: { "todo.text": text },
+    operation: async (span) => {
+      const todo = {
+        id: Math.random().toString(36).substring(7),
+        text,
+        completed: false,
+      };
+
+      todos.push(todo);
+      revalidatePath("/");
+
+      span.setAttribute("todo.id", todo.id);
+
+      await track("todo_added", {
+        todoId: todo.id,
+        todoText: text,
+      });
+
+      return todo;
+    },
+  });
 }
 
 export async function toggleTodo(id: string) {
-  const todo = todos.find((t) => t.id === id);
-  if (todo) {
-    todo.completed = !todo.completed;
-    revalidatePath("/");
+  withTodoSpan({
+    operationName: "toggle_todo",
+    attributes: { "todo.id": id },
+    operation: async (span) => {
+      const todo = todos.find((t) => t.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        revalidatePath("/");
 
-    await track("todo_toggled", {
-      todoId: id,
-      completed: todo.completed,
-    });
-  }
+        span.setAttribute("todo.completed", todo.completed);
+
+        await track("todo_toggled", {
+          todoId: id,
+          completed: todo.completed,
+        });
+      }
+    },
+  });
 }
 
 export async function getTodos(): Promise<Todo[]> {
-  return todos;
+  return withTodoSpan({
+    operationName: "get_todos",
+    operation: async (span: Span) => {
+      span.setAttribute("todos.count", todos.length);
+      return todos;
+    },
+  });
 }
