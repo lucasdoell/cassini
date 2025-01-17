@@ -15,6 +15,10 @@ const LOG_LEVEL = {
  */
 type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 
+type SyncLogOutput = (log: StructuredLog) => void;
+type AsyncLogOutput = (log: StructuredLog) => Promise<void>;
+type LogOutput = SyncLogOutput | AsyncLogOutput;
+
 /**
  * Configuration options for the structured logger.
  */
@@ -25,8 +29,8 @@ export interface LoggerConfig {
   minLevel?: LogLevel;
   /** Additional context to include with every log */
   defaultMetadata?: Record<string, unknown>;
-  /** Optional function to handle the structured log output */
-  outputFn?: (log: StructuredLog) => Promise<void>;
+  /** Function to handle the structured log output. Can be sync or async */
+  outputFn?: LogOutput;
   /** Optional custom URL for the OpenTelemetry collector */
   exporterUrl?: string;
 }
@@ -52,7 +56,10 @@ export interface StructuredLog {
 /**
  * Creates a default output function that sends logs to the OpenTelemetry collector.
  */
-function createDefaultOutputFn(serviceName: string, exporterUrl?: string) {
+function createDefaultOutputFn(
+  serviceName: string,
+  exporterUrl?: string
+): AsyncLogOutput {
   const url =
     exporterUrl ||
     process.env.OTEL_API_URL ||
@@ -73,7 +80,7 @@ function createDefaultOutputFn(serviceName: string, exporterUrl?: string) {
     console[consoleMethod](`[${log.service}] ${log.message}`, logData);
 
     try {
-      const response = await fetch(`${url}/logs`, {
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,6 +100,20 @@ function createDefaultOutputFn(serviceName: string, exporterUrl?: string) {
       }
     }
   };
+}
+
+/**
+ * Helper function to handle both sync and async output functions
+ */
+async function safeExecuteOutput(
+  outputFn: LogOutput,
+  log: StructuredLog
+): Promise<void> {
+  try {
+    await Promise.resolve(outputFn(log));
+  } catch (error) {
+    console.error(`Failed to send ${log.level.toLowerCase()} log:`, error);
+  }
 }
 
 /**
@@ -169,41 +190,37 @@ export function createStructuredLogger({
   return {
     async debug(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.DEBUG)) {
-        try {
-          await sendLog(createLogEntry(LOG_LEVEL.DEBUG, message, metadata));
-        } catch (error) {
-          console.error("Failed to send debug log:", error);
-        }
+        await safeExecuteOutput(
+          sendLog,
+          createLogEntry(LOG_LEVEL.DEBUG, message, metadata)
+        );
       }
     },
 
     async info(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.INFO)) {
-        try {
-          await sendLog(createLogEntry(LOG_LEVEL.INFO, message, metadata));
-        } catch (error) {
-          console.error("Failed to send info log:", error);
-        }
+        await safeExecuteOutput(
+          sendLog,
+          createLogEntry(LOG_LEVEL.INFO, message, metadata)
+        );
       }
     },
 
     async warn(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.WARN)) {
-        try {
-          await sendLog(createLogEntry(LOG_LEVEL.WARN, message, metadata));
-        } catch (error) {
-          console.error("Failed to send warn log:", error);
-        }
+        await safeExecuteOutput(
+          sendLog,
+          createLogEntry(LOG_LEVEL.WARN, message, metadata)
+        );
       }
     },
 
     async error(message: string | Error, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.ERROR)) {
-        try {
-          await sendLog(createLogEntry(LOG_LEVEL.ERROR, message, metadata));
-        } catch (error) {
-          console.error("Failed to send error log:", error);
-        }
+        await safeExecuteOutput(
+          sendLog,
+          createLogEntry(LOG_LEVEL.ERROR, message, metadata)
+        );
       }
     },
   };
