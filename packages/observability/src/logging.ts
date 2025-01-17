@@ -18,8 +18,10 @@ type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
 type SyncLogOutput = (log: StructuredLog) => void;
 type AsyncLogOutput = (log: StructuredLog) => Promise<void>;
 
+type IsAsync<T> = T extends (...args: any[]) => Promise<any> ? true : false;
+
 export interface LoggerConfig<
-  T extends SyncLogOutput | AsyncLogOutput = AsyncLogOutput
+  T extends SyncLogOutput | AsyncLogOutput | undefined = undefined
 > {
   /** Name of the service or component using the logger */
   serviceName: string;
@@ -28,7 +30,7 @@ export interface LoggerConfig<
   /** Additional context to include with every log */
   defaultMetadata?: Record<string, unknown>;
   /** Function to handle the structured log output. Can be sync or async */
-  outputFn?: T;
+  outputFn?: T extends undefined ? SyncLogOutput | AsyncLogOutput : T;
   /** Optional custom URL for the OpenTelemetry collector */
   exporterUrl?: string;
 }
@@ -122,8 +124,14 @@ function createDefaultOutputFn(
 }
 
 export function createStructuredLogger<
-  T extends SyncLogOutput | AsyncLogOutput
->(config: LoggerConfig<T>): T extends SyncLogOutput ? SyncLogger : AsyncLogger;
+  T extends SyncLogOutput | AsyncLogOutput | undefined = undefined
+>(
+  config: LoggerConfig<T>
+): T extends SyncLogOutput | AsyncLogOutput
+  ? IsAsync<T> extends true
+    ? AsyncLogger
+    : SyncLogger
+  : AsyncLogger;
 
 /**
  * Creates a structured logger that can be either synchronous or asynchronous
@@ -145,7 +153,10 @@ export function createStructuredLogger({
 
   // Use provided outputFn or create default one
   const sendLog = outputFn || createDefaultOutputFn(serviceName, exporterUrl);
-  const isAsync = sendLog.constructor.name === "AsyncFunction" || !outputFn;
+  const isAsync =
+    outputFn === undefined ||
+    sendLog.constructor.name === "AsyncFunction" ||
+    sendLog.toString().includes("return __awaiter");
 
   function createLogEntry(
     level: LogLevel,
