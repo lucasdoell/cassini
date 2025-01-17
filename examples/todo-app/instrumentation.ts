@@ -1,5 +1,5 @@
-import { registerCassiniObservability } from "@cassini/observability/next";
+import { registerCassiniOTel } from "@cassini/observability/next";
 
 export function register() {
-  registerCassiniObservability({ serviceName: "todo-app" });
+  registerCassiniOTel({ serviceName: "todo-app" });
 }
