@@ -1,1 +1,1 @@
-export default "hello";
+export * from "./logging";
