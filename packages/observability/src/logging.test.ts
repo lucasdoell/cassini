@@ -2,14 +2,16 @@ import { describe, expect, test } from "vitest";
 import { createStructuredLogger, LOG_LEVEL } from "./logging";
 
 describe("createStructuredLogger", () => {
-  test("creates logs with correct structure", () => {
+  test("creates logs with correct structure", async () => {
     const logs: any[] = [];
     const logger = createStructuredLogger({
       serviceName: "test-service",
-      outputFn: (log) => logs.push(log),
+      outputFn: async (log) => {
+        logs.push(log);
+      },
     });
 
-    logger.info("Test message", { foo: "bar" });
+    await logger.info("Test message", { foo: "bar" });
 
     expect(logs[0]).toMatchObject({
       level: LOG_LEVEL.INFO,
@@ -22,15 +24,17 @@ describe("createStructuredLogger", () => {
     expect(logs[0].timestamp).toBeDefined();
   });
 
-  test("handles errors correctly", () => {
+  test("handles errors correctly", async () => {
     const logs: any[] = [];
     const logger = createStructuredLogger({
       serviceName: "test-service",
-      outputFn: (log) => logs.push(log),
+      outputFn: async (log) => {
+        logs.push(log);
+      },
     });
 
     const error = new Error("Test error");
-    logger.error(error, { context: "testing" });
+    await logger.error(error, { context: "testing" });
 
     expect(logs[0]).toMatchObject({
       level: LOG_LEVEL.ERROR,
@@ -47,37 +51,55 @@ describe("createStructuredLogger", () => {
     });
   });
 
-  test("respects minimum log level", () => {
+  test("respects minimum log level", async () => {
     const logs: any[] = [];
     const logger = createStructuredLogger({
       serviceName: "test-service",
       minLevel: LOG_LEVEL.WARN,
-      outputFn: (log) => logs.push(log),
+      outputFn: async (log) => {
+        logs.push(log);
+      },
     });
 
-    logger.debug("Debug message");
-    logger.info("Info message");
-    logger.warn("Warning message");
-    logger.error("Error message");
+    await logger.debug("Debug message");
+    await logger.info("Info message");
+    await logger.warn("Warning message");
+    await logger.error("Error message");
 
     expect(logs).toHaveLength(2);
     expect(logs[0].level).toBe(LOG_LEVEL.WARN);
     expect(logs[1].level).toBe(LOG_LEVEL.ERROR);
   });
 
-  test("includes default metadata", () => {
+  test("includes default metadata", async () => {
     const logs: any[] = [];
     const logger = createStructuredLogger({
       serviceName: "test-service",
       defaultMetadata: { environment: "test" },
-      outputFn: (log) => logs.push(log),
+      outputFn: async (log) => {
+        logs.push(log);
+      },
     });
 
-    logger.info("Test message", { custom: "value" });
+    await logger.info("Test message", { custom: "value" });
 
     expect(logs[0].metadata).toEqual({
       environment: "test",
       custom: "value",
     });
+  });
+
+  test("handles failed log submission gracefully", async () => {
+    const mockOutputFn = async () => {
+      throw new Error("Network error");
+    };
+
+    const logger = createStructuredLogger({
+      serviceName: "test-service",
+      outputFn: mockOutputFn,
+    });
+
+    // Should not throw
+    await expect(logger.info("Test message")).resolves.not.toThrow();
   });
 });
