@@ -1,11 +1,16 @@
 "use server";
 
 import { track } from "@cassini/analytics/next/server";
+import { createStructuredLogger } from "@cassini/observability";
 import { Span, withSpan } from "@cassini/observability/next";
 import { revalidatePath } from "next/cache";
 import { Todo } from "./types";
 
 let todos: Todo[] = [];
+
+const logger = createStructuredLogger({
+  serviceName: "todo-app",
+});
 
 export async function withTodoSpan<T>({
   operationName,
@@ -45,6 +50,8 @@ export async function addTodo(text: string) {
         todoText: text,
       });
 
+      logger.info("Todo added", { todoId: todo.id, todoText: text });
+
       return todo;
     },
   });
@@ -66,6 +73,8 @@ export async function toggleTodo(id: string) {
           todoId: id,
           completed: todo.completed,
         });
+
+        logger.info("Todo toggled", { todoId: id, completed: todo.completed });
       }
     },
   });
@@ -76,6 +85,8 @@ export async function getTodos(): Promise<Todo[]> {
     operationName: "get_todos",
     operation: async (span: Span) => {
       span.setAttribute("todos.count", todos.length);
+
+      logger.info("Todos retrieved", { todosCount: todos.length });
       return todos;
     },
   });
