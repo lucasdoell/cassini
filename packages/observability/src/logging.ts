@@ -26,7 +26,9 @@ export interface LoggerConfig {
   /** Additional context to include with every log */
   defaultMetadata?: Record<string, unknown>;
   /** Optional function to handle the structured log output */
-  outputFn?: (log: StructuredLog) => void;
+  outputFn?: (log: StructuredLog) => Promise<void>;
+  /** Optional custom URL for the OpenTelemetry collector */
+  exporterUrl?: string;
 }
 
 /**
@@ -48,6 +50,52 @@ export interface StructuredLog {
 }
 
 /**
+ * Creates a default output function that sends logs to the OpenTelemetry collector.
+ */
+function createDefaultOutputFn(serviceName: string, exporterUrl?: string) {
+  const url =
+    exporterUrl ||
+    process.env.OTEL_API_URL ||
+    "http://localhost:3001/observability";
+
+  return async function sendLog(log: StructuredLog): Promise<void> {
+    const consoleMethod = log.level.toLowerCase() as Lowercase<
+      keyof typeof LOG_LEVEL
+    >;
+    const logData = {
+      message: log.message,
+      ...log.metadata,
+      traceId: log.traceId,
+      spanId: log.spanId,
+      ...(log.error && { error: log.error }),
+    };
+
+    console[consoleMethod](`[${log.service}] ${log.message}`, logData);
+
+    try {
+      const response = await fetch(`${url}/logs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Service-Name": serviceName,
+        },
+        body: JSON.stringify(log),
+      });
+
+      if (!response.ok) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to send log:", await response.text());
+        }
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to send log:", error);
+      }
+    }
+  };
+}
+
+/**
  * Creates a structured logger with OpenTelemetry integration.
  *
  * @example
@@ -57,15 +105,16 @@ export interface StructuredLog {
  *   defaultMetadata: { environment: 'production' }
  * });
  *
- * logger.info('User logged in', { userId: '123' });
- * logger.error(new Error('Authentication failed'), { userId: '123' });
+ * await logger.info('User logged in', { userId: '123' });
+ * await logger.error(new Error('Authentication failed'), { userId: '123' });
  * ```
  */
 export function createStructuredLogger({
   serviceName,
   minLevel = LOG_LEVEL.DEBUG,
   defaultMetadata = {},
-  outputFn = console.log,
+  exporterUrl,
+  outputFn,
 }: LoggerConfig) {
   const logLevels: Record<LogLevel, number> = {
     [LOG_LEVEL.DEBUG]: 0,
@@ -74,9 +123,8 @@ export function createStructuredLogger({
     [LOG_LEVEL.ERROR]: 3,
   };
 
-  /**
-   * Creates a structured log entry with current trace context.
-   */
+  const sendLog = outputFn || createDefaultOutputFn(serviceName, exporterUrl);
+
   function createLogEntry(
     level: LogLevel,
     message: string | Error,
@@ -114,35 +162,48 @@ export function createStructuredLogger({
     return log;
   }
 
-  /**
-   * Checks if a log level should be recorded based on minimum level.
-   */
   function shouldLog(level: LogLevel): boolean {
     return logLevels[level] >= logLevels[minLevel];
   }
 
   return {
-    debug(message: string, metadata?: Record<string, unknown>) {
+    async debug(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.DEBUG)) {
-        outputFn(createLogEntry(LOG_LEVEL.DEBUG, message, metadata));
+        try {
+          await sendLog(createLogEntry(LOG_LEVEL.DEBUG, message, metadata));
+        } catch (error) {
+          console.error("Failed to send debug log:", error);
+        }
       }
     },
 
-    info(message: string, metadata?: Record<string, unknown>) {
+    async info(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.INFO)) {
-        outputFn(createLogEntry(LOG_LEVEL.INFO, message, metadata));
+        try {
+          await sendLog(createLogEntry(LOG_LEVEL.INFO, message, metadata));
+        } catch (error) {
+          console.error("Failed to send info log:", error);
+        }
       }
     },
 
-    warn(message: string, metadata?: Record<string, unknown>) {
+    async warn(message: string, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.WARN)) {
-        outputFn(createLogEntry(LOG_LEVEL.WARN, message, metadata));
+        try {
+          await sendLog(createLogEntry(LOG_LEVEL.WARN, message, metadata));
+        } catch (error) {
+          console.error("Failed to send warn log:", error);
+        }
       }
     },
 
-    error(message: string | Error, metadata?: Record<string, unknown>) {
+    async error(message: string | Error, metadata?: Record<string, unknown>) {
       if (shouldLog(LOG_LEVEL.ERROR)) {
-        outputFn(createLogEntry(LOG_LEVEL.ERROR, message, metadata));
+        try {
+          await sendLog(createLogEntry(LOG_LEVEL.ERROR, message, metadata));
+        } catch (error) {
+          console.error("Failed to send error log:", error);
+        }
       }
     },
   };
