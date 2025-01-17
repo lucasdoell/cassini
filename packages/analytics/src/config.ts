@@ -6,7 +6,7 @@ import { AnalyticsConfig } from "./types";
  * If no custom configuration is provided, this configuration will be used.
  */
 export const DEFAULT_CONFIG: Required<AnalyticsConfig> = {
-  endpoint: "http://localhost:3001/analytics",
+  endpoint: "http://localhost:8080/analytics",
   apiKey: "", // Will be automatically populated from env vars
   debug: false,
   disabled: false,

@@ -18,7 +18,7 @@ export type CassiniProviderConfig = {
 
   /**
    * Custom URL for the OpenTelemetry collector.
-   * Defaults to process.env.OTEL_API_URL or "http://localhost:3001/observability"
+   * Defaults to process.env.OTEL_API_URL or "http://localhost:8080/observability"
    */
   exporterUrl?: string;
 };
@@ -41,7 +41,7 @@ export type CassiniProviderConfig = {
  * @param config - Configuration options for the OpenTelemetry registration
  * @param config.serviceName - Name of the service being instrumented
  * @param config.processSpans - Whether to process and export spans (defaults to true)
- * @param config.exporterUrl - Optional custom URL for the OpenTelemetry collector. Defaults to process.env.OTEL_API_URL or "http://localhost:3001/observability" if no value is provided.
+ * @param config.exporterUrl - Optional custom URL for the OpenTelemetry collector. Defaults to process.env.OTEL_API_URL or "http://localhost:8080/observability" if no value is provided.
  */
 export function registerCassiniOTel({
   serviceName,
@@ -63,7 +63,7 @@ export function registerCassiniOTel({
               url:
                 exporterUrl ||
                 process.env.OTEL_API_URL ||
-                "http://localhost:3001/observability",
+                "http://localhost:8080/observability",
             })
           ),
         ]

@@ -82,7 +82,7 @@ function createDefaultOutputFn(
   const url =
     exporterUrl ||
     process.env.OTEL_API_URL ||
-    "http://localhost:3001/observability";
+    "http://localhost:8080/observability";
 
   return async function sendLog(log: StructuredLog): Promise<void> {
     const consoleMethod = log.level.toLowerCase() as Lowercase<

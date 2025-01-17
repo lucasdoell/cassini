@@ -48,7 +48,7 @@ export function Analytics({
 
   if (!analyticsRef.current) {
     const finalConfig = {
-      endpoint: "http://localhost:3001/analytics",
+      endpoint: "http://localhost:8080/analytics",
       ...config,
     } as Required<AnalyticsConfig>;
 

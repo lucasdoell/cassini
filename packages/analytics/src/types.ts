@@ -4,7 +4,7 @@
  * If not provided, the default configuration will be used.
  */
 export interface AnalyticsConfig {
-  /** The endpoint to send analytics events to. This is usually a URL to your Cassini backend. The default value is "http://localhost:3001/analytics". */
+  /** The endpoint to send analytics events to. This is usually a URL to your Cassini backend. The default value is "http://localhost:8080/analytics". */
   endpoint?: string;
   /** Your Cassini API key. This is required to send analytics events to your Cassini backend. The default value is an empty string. */
   apiKey?: string;
