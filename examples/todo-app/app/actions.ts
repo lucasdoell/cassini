@@ -50,7 +50,7 @@ export async function addTodo(text: string) {
         todoText: text,
       });
 
-      logger.info("Todo added", { todoId: todo.id, todoText: text });
+      await logger.info("Todo added", { todoId: todo.id, todoText: text });
 
       return todo;
     },
@@ -74,7 +74,10 @@ export async function toggleTodo(id: string) {
           completed: todo.completed,
         });
 
-        logger.info("Todo toggled", { todoId: id, completed: todo.completed });
+        await logger.info("Todo toggled", {
+          todoId: id,
+          completed: todo.completed,
+        });
       }
     },
   });
@@ -86,7 +89,7 @@ export async function getTodos(): Promise<Todo[]> {
     operation: async (span: Span) => {
       span.setAttribute("todos.count", todos.length);
 
-      logger.info("Todos retrieved", { todosCount: todos.length });
+      await logger.info("Todos retrieved", { todosCount: todos.length });
       return todos;
     },
   });
