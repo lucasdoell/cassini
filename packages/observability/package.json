@@ -19,9 +19,8 @@
     "./dist/*": "./dist/*"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "test": "vitest",
-    "lint": "eslint src --ext .ts"
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.19.1",
