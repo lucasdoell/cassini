@@ -1,5 +1,13 @@
 import { Span as OTelSpan, SpanStatusCode, trace } from "@opentelemetry/api";
 
+/**
+ * Represents an OpenTelemetry span, which is a unit of work in a distributed
+ * trace. Spans can be used to measure the duration of operations, add
+ * attributes, and record events.
+ *
+ * This type is an alias for the OpenTelemetry Span type contained in the
+ * `@opentelemetry/api` package. It is exported for your convenience.
+ */
 export type Span = OTelSpan;
 
 /**
