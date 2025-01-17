@@ -51,22 +51,24 @@ export interface StructuredLog {
   spanId?: string;
 }
 
-interface SyncLogger {
-  debug(message: string, metadata?: Record<string, unknown>): void;
-  info(message: string, metadata?: Record<string, unknown>): void;
-  warn(message: string, metadata?: Record<string, unknown>): void;
-  error(message: string | Error, metadata?: Record<string, unknown>): void;
-}
+/**
+ * Base type for logger method parameters
+ */
+type LogMethodParams = {
+  [K in LogLevel]: K extends "ERROR"
+    ? [message: string | Error, metadata?: Record<string, unknown>]
+    : [message: string, metadata?: Record<string, unknown>];
+};
 
-interface AsyncLogger {
-  debug(message: string, metadata?: Record<string, unknown>): Promise<void>;
-  info(message: string, metadata?: Record<string, unknown>): Promise<void>;
-  warn(message: string, metadata?: Record<string, unknown>): Promise<void>;
-  error(
-    message: string | Error,
-    metadata?: Record<string, unknown>
-  ): Promise<void>;
-}
+/**
+ * Creates a logger interface with either sync or async methods
+ */
+type CreateLogger<TReturn> = {
+  [K in LogLevel as Lowercase<K>]: (...args: LogMethodParams[K]) => TReturn;
+};
+
+type SyncLogger = CreateLogger<void>;
+type AsyncLogger = CreateLogger<Promise<void>>;
 
 /**
  * Creates a default output function that sends logs to the OpenTelemetry collector.
