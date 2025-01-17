@@ -12,7 +12,7 @@ import (
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3001"
+		port = "8080"
 	}
 
 	http.HandleFunc("/analytics", analytics.AnalyticsHandler)
