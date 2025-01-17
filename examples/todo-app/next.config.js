@@ -10,6 +10,9 @@ const nextConfig = {
       "@cassini/analytics/next/server$": require.resolve(
         "@cassini/analytics/dist/next/server/index.js"
       ),
+      "@cassini/observability/next$": require.resolve(
+        "@cassini/observability/dist/next/index.js"
+      ),
     };
     return config;
   },
