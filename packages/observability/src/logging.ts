@@ -101,7 +101,9 @@ function createDefaultOutputFn(
           "Content-Type": "application/json",
           "Service-Name": serviceName,
         },
-        body: JSON.stringify(log),
+        // We add a `type` field to the log to distinguish it from other observability data
+        // With Cassini, we can use this to filter out logs from other observability systems such as spans and metrics
+        body: JSON.stringify({ type: "structured_log", ...log }),
       });
 
       if (!response.ok) {
