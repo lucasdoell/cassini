@@ -1,4 +1,14 @@
 import { SpanStatusCode, trace } from "@opentelemetry/api";
+import {
+  AsyncLogOutput,
+  AsyncLogger,
+  IsAsync,
+  LogLevel,
+  LoggerConfig,
+  StructuredLog,
+  SyncLogOutput,
+  SyncLogger,
+} from "./types";
 
 /**
  * Available log levels for the structured logger.
@@ -9,68 +19,6 @@ const LOG_LEVEL = {
   WARN: "WARN",
   ERROR: "ERROR",
 } as const;
-
-/**
- * Type representing available log levels.
- */
-type LogLevel = (typeof LOG_LEVEL)[keyof typeof LOG_LEVEL];
-
-type SyncLogOutput = (log: StructuredLog) => void;
-type AsyncLogOutput = (log: StructuredLog) => Promise<void>;
-
-type IsAsync<T> = T extends (...args: any[]) => Promise<any> ? true : false;
-
-export interface LoggerConfig<
-  T extends SyncLogOutput | AsyncLogOutput | undefined = undefined
-> {
-  /** Name of the service or component using the logger */
-  serviceName: string;
-  /** Minimum log level to record. Defaults to DEBUG */
-  minLevel?: LogLevel;
-  /** Additional context to include with every log */
-  defaultMetadata?: Record<string, unknown>;
-  /** Function to handle the structured log output. Can be sync or async */
-  outputFn?: T extends undefined ? SyncLogOutput | AsyncLogOutput : T;
-  /** Optional custom URL for the OpenTelemetry collector */
-  exporterUrl?: string;
-}
-
-/**
- * Structure of a log entry produced by the logger.
- */
-export interface StructuredLog {
-  timestamp: string;
-  level: LogLevel;
-  message: string;
-  service: string;
-  metadata?: Record<string, unknown>;
-  error?: {
-    name: string;
-    message: string;
-    stack?: string;
-  };
-  traceId?: string;
-  spanId?: string;
-}
-
-/**
- * Base type for logger method parameters
- */
-type LogMethodParams = {
-  [K in LogLevel]: K extends "ERROR"
-    ? [message: string | Error, metadata?: Record<string, unknown>]
-    : [message: string, metadata?: Record<string, unknown>];
-};
-
-/**
- * Creates a logger interface with either sync or async methods
- */
-type CreateLogger<TReturn> = {
-  [K in LogLevel as Lowercase<K>]: (...args: LogMethodParams[K]) => TReturn;
-};
-
-type SyncLogger = CreateLogger<void>;
-type AsyncLogger = CreateLogger<Promise<void>>;
 
 /**
  * Creates a default output function that sends logs to the OpenTelemetry collector.
