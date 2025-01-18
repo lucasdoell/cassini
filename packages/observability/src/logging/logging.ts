@@ -1,5 +1,5 @@
 import { SpanStatusCode, trace } from "@opentelemetry/api";
-import {
+import type {
   AsyncLogOutput,
   AsyncLogger,
   IsAsync,
